@@ -12,7 +12,8 @@ Responsáveis por lidar com as requisições HTTP relacionadas ao login.
 
 # Middlewares
 Contém funções que são executadas entre a requisição e o controlador.
-###  Models
+
+#  Models
 Modelos de dados da aplicação. Neste caso, inclui o modelo de `User`, com campos como email, senha (hash) e permissões.
 
 # Routes
