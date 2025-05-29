@@ -1,1 +1,88 @@
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.web.bind.annotation.*;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+
+import java.util.Date;
+import java.util.List;
+
+@SpringBootApplication
+@RestController
+public class SushiAuthApp {
+
+    private static final String SECRET_KEY = "chave-jwt-super-secreta-do-sushi";
+    private static final long EXPIRATION_TIME = 3600000; // 1 hora
+
+    // Usuário simulado (username: sushiadmin, senha: sushi123)
+    private static final List<Usuario> usuarios = List.of(
+            new Usuario("sushiadmin", BCrypt.hashpw("sushi123", BCrypt.gensalt()))
+    );
+
+    public static void main(String[] args) {
+        SpringApplication.run(SushiAuthApp.class, args);
+    }
+
+    // Desativa segurança padrão do Spring para facilitar testes
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().antMatchers("/**");
+    }
+
+    @PostMapping("/login")
+    public TokenResponse login(@RequestBody Usuario login) {
+        for (Usuario usuario : usuarios) {
+            if (usuario.getUsername().equals(login.getUsername()) &&
+                BCrypt.checkpw(login.getPassword(), usuario.getPassword())) {
+
+                String token = gerarToken(usuario.getUsername());
+                return new TokenResponse(token);
+            }
+        }
+        throw new RuntimeException("Usuário ou senha inválidos");
+    }
+
+    private String gerarToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuer("sushi-backend")
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
+                .compact();
+    }
+
+    // Modelo do usuário (apenas para autenticação)
+    static class Usuario {
+        private String username;
+        private String password;
+
+        public Usuario() {}
+        public Usuario(String username, String password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+    }
+
+    // Modelo de resposta com token
+    static class TokenResponse {
+        private String token;
+
+        public TokenResponse(String token) {
+            this.token = token;
+        }
+
+        public String getToken() {
+            return token;
+        }
+    }
+}
 
