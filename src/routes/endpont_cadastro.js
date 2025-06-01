@@ -3,6 +3,8 @@ import express from 'express';
 const app = express();
 app.use(express.json());
 
+const cadastros = [];
+
 // endpoint para o cadastro//
 app.post('/cadastro', (req, res) => {
   const {
@@ -24,47 +26,67 @@ app.post('/cadastro', (req, res) => {
     return res.status(400).json({ mensagem: 'Preencha todos os campos obrigatórios.' });
   }
 
+  //verificando se o e-mail já está cadastrado
+  const emailExistente = cadastros.find(c => c.email === email);
+  if (emailExistente) {
+    return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
+  }
+
 // simulando uma resposta para teste do servidor//
-/* return res.status(201).json({
+ const novoCadastro = {
+    id: cadastros.length + 1,
+    nome,
+    email,
+    numero,
+    data_de_nascimento,
+    genero,
+    senha,
+    cep,
+    logradouro,
+    bairro,
+    numero_da_residencia,
+    complemento
+  };
+
+  cadastros.push(novoCadastro);
+
+  return res.status(201).json({
     mensagem: 'Cadastro realizado com sucesso!',
-    dadosRecebidos: {
-      nome,
-      email,
-      numero,
-      data_de_nascimento,
-      genero,
-      cep,
-      logradouro,
-      bairro,
-      numero_da_residencia,
-      complemento
-    }
-  });*/
+    cadastro: novoCadastro
+  });
 });
 
-// ednpoint para atualizar dados//
+// endpoint para atualizar dados//
 app.put('/cadastro/:id', (req, res) => {
   const { id } = req.params;
   const dadosAtualizados = req.body;
- const index = cadastros.findIndex(c => c.id === parseInt(id));
+  const index = cadastros.findIndex(c => c.id === parseInt(id));
 
   if (index === -1) {
     return res.status(404).json({ mensagem: 'Cadastro não encontrado.' });
   }
 
-cadastros[index] = { ...cadastros[index], ...dadosAtualizados };
-/*
+  // bloqueia a alteração para um e-mail que já existe em outro cadastro
+  if (dadosAtualizados.email) {
+    const emailExistente = cadastros.find(c => c.email === dadosAtualizados.email && c.id !== parseInt(id));
+    if (emailExistente) {
+      return res.status(409).json({ mensagem: 'E-mail já cadastrado por outro usuário.' });
+    }
+  }
+
+  cadastros[index] = { ...cadastros[index], ...dadosAtualizados };
+
   return res.status(200).json({
     mensagem: `Cadastro com ID ${id} atualizado com sucesso!`,
     cadastroAtualizado: cadastros[index]
   });
-*/
+
 });
 
 // endpoint para deletar dados//
 app.delete('/cadastro/:id', (req, res) => {
   const { id } = req.params;
-const index = cadastros.findIndex(c => c.id === parseInt(id));
+  const index = cadastros.findIndex(c => c.id === parseInt(id));
 
   if (index === -1) {
     return res.status(404).json({ mensagem: 'Cadastro não encontrado.' });
